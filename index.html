@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Light uP the Sky</title>
+	</head>
+
+<body>
+
+	<!---	
+		Auth: Stephen Dunn
+		Email: sdunn@sourceallies.com
+		Desc: Draws some basic lighting on the page
+
+	-->
+
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+			border: 0;
+		}
+
+		#rand1 {
+			position: absolute;
+			top: 0;
+			left: 0;
+			z-index: -1;
+		}
+		
+	</style>
+
+
+<canvas id='rand1'></canvas>
+
+<script>
+	
+	
+	
+	var canvas    = document.getElementById('rand1');
+	canvas.width  = document.documentElement.clientWidth;
+	canvas.height = document.documentElement.clientHeight;
+	var cx        = canvas.getContext('2d');
+	cx.fillStyle  = "gray";
+	cx.fillRect(0,0,canvas.width,canvas.height)
+	var rainPoints = [];
+
+	function rainRemove(inRain) {
+		for (var i = 0; i < rainPoints.length; i++) {
+			if (rainPoints[i].x == inRain.x && rainPoints[i].w == inRain.w && inRain.t == rainPoints[i].t) {
+				rainPoints.splice(i,1);
+				console.log("REMOVED " + i);
+				return 1;
+			}
+		}
+		return 0;
+	}
+	
+	function getRainLine() {
+		var fallPoint = {
+			x: Math.floor((Math.random()*canvas.width)+1),
+			t: Math.floor((Math.random()*6000)+1000),
+			w: Math.floor((Math.random()*40)+1)
+		};
+		return fallPoint;
+	}
+	
+	function paintRainLine(x,w,color) {
+		cx.beginPath();
+		cx.moveTo(x,0);
+		cx.lineTo(x+w,canvas.width);
+		cx.strokeStyle = color;
+		cx.closePath();
+		cx.stroke();
+	}
+
+	function makeRain() {
+
+		var rain = getRainLine();
+		var gColor = cx.createLinearGradient(0,0,rain.x,canvas.width);
+			gColor.addColorStop(0,"rgba(171,205,239,0)");
+			gColor.addColorStop(1,"rgba(171,205,239,0.3)");
+
+		paintRainLine(rain.x,rain.w,gColor);	
+		rainPoints.push(rain);
+
+		//Clears it and makes it rain again//
+		setTimeout(function() { 
+				paintRainLine(rain.x,rain.w,"gray");
+				rainRemove(rain);
+				makeRain(); 
+		},rain.t);
+	}
+
+
+	/* how many rain lines at one time */
+	for (var x = 1; x < 100; x++) {
+		makeRain();
+	}
+
+	
+	
+	lightShow();
+
+
+	function lightShow() {
+		cx.beginPath();
+		cx.lineJoin="round";
+
+		var lightArray = getLightArray();
+		drawLight(lightArray,"white");
+		var savePoints = findPoints(lightArray);
+
+		var flag = 1;
+		var totalStaticPoints = [];
+		for(var i = 0; i < savePoints.length; i = i+2) {
+			for (var p = 0; p < Math.floor(Math.random() * 3)+3; p++) {
+				var staticTest = getStaticLine(savePoints[i],savePoints[i+1],flag);
+				drawLight(staticTest,"white");
+				totalStaticPoints.push(staticTest);
+			}
+			flag = Math.floor(Math.random()*2);
+		}
+		
+		cx.stroke();
+
+		
+		setTimeout(function() {
+			/*
+			drawLight(lightArray,"gray");
+			for (var i = 0; i < totalStaticPoints.length; i++) {
+				drawLight(totalStaticPoints[i],"gray");
+			}
+			cx.stroke();
+			*/
+			cx.fillStyle = "gray";
+			cx.fillRect(0,0,canvas.width,canvas.height);
+
+			/*
+			for (var i = 0; i < 100; i++) {
+				var rain = getRainLine();
+				paintRainLine(rain.x,rain.w,gColor);
+			}
+			*/
+
+			for (var i = 0; i < rainPoints.length; i++) {
+				var gColor = cx.createLinearGradient(0,0,rainPoints[i].x,canvas.width);
+				gColor.addColorStop(0,"rgba(171,205,239,0)");
+				gColor.addColorStop(1,"rgba(171,205,239,0.3)");
+				paintRainLine(rainPoints[i].x,rainPoints[i].w,gColor);
+
+				setTimeout(function() { 
+					paintRainLine(rainPoints[i].x,rainPoints[i].w,"gray");
+					rainRemove(rainPoints[i]);
+					//makeRain();
+				},rainPoints[i].t);
+
+			}
+
+			setTimeout(function() { lightShow(); },10000);
+		},1000);
+		
+	}
+	
+
+	
+	/* Returns a line that is all strange looking */
+	function getLightArray() {
+	
+		var lastX = Math.floor((Math.random()*canvas.width-60) + 3);
+		var lastY = 0;
+		var newLight = [lastX,lastY];
+
+		var direction = Math.floor(Math.random()*2);
+			
+		for (var i = 0; i < 15; i++) {
+			var rndX = Math.floor(Math.random()*30);
+			var rndY = Math.floor(Math.random()*60);
+			if (direction) {
+				newLight.push(rndX+lastX,rndY+lastY);
+				lastX = rndX+lastX;
+				lastY = rndY+lastY;
+			} else {
+				newLight.push(lastX - rndX,rndY+lastY);
+				lastX = lastX-rndX;
+				lastY = lastY+rndY;
+			}
+		}
+
+		return newLight;
+	}
+	
+	function getStaticLine(inStart,inEnd,direction) {
+		var newDirection = [inStart,inEnd];
+
+		for (var i = 0;i < 3+Math.floor(Math.random()*5); i++) {
+
+			var rndX = Math.floor(Math.random()*20);
+			var rndY = Math.floor(Math.random()*20);
+
+			if (direction) {
+				inStart = inStart - rndX;
+				inEnd   = inEnd + rndY;
+			} else {
+				inStart = inStart + rndX;
+				inEnd   = inEnd + rndY;
+			}
+
+			newDirection.push(inStart,inEnd);
+		}
+		
+		return newDirection;
+	}
+	
+	function findPoints(inPoints) {
+		
+		if (inPoints.length % 2) { throw "Not Even amount of points"; }
+		
+		var maxValue  = 4;
+		var lastValue = inPoints[0];
+		var staticPoints = [];
+		for (var i = 0;i < inPoints.length; i = i+2) {
+			if ( (maxValue + lastValue) <= inPoints[i] || (maxValue + lastValue) >= inPoints[i]) {
+				staticPoints.push(inPoints[i],inPoints[i+1]);
+				lastValue = inPoints[i];
+			} 	
+		}
+
+		return staticPoints;
+	}
+
+	function drawLight(inPoints,color) {
+		
+		if (inPoints.length % 2) { throw "Not Even amount of points"; }
+
+		cx.strokeStyle = color;
+		cx.moveTo(inPoints[0],inPoints[1]);
+		
+		for (var i = 2;i < inPoints.length; i = i+2) {
+			cx.lineTo(inPoints[i],inPoints[(i+1)]);
+		}
+	}
+
+
+		setTimeout(function() {
+		cx.beginPath();
+		cx.moveTo(canvas.width, canvas.height);
+		cx.arc(canvas.width, canvas.height, 10, 0, 2*Math.PI, true);
+		cx.closePath();
+		cx.fill();},1000);
+
+
+</script>
+
+
+
+
+<!--	
+<div id='mainbox' style='width: 600px;height: 300px;background-color: rgba(139,119,101,0.6);margin:75px auto;'></div>
+-->	
+
+
+
+
+</body>
+</html>
